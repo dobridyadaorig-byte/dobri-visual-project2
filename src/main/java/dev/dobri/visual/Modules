@@ -1,0 +1,64 @@
+package dev.dobri.visual;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import net.fabricmc.loader.api.FabricLoader;
+
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Список всех функций + сохранение в config/dobri_visual.json.
+ * Чтобы добавить новую функцию: создай Module здесь, добавь в LIST и нарисуй её в Hud.java.
+ */
+public final class Modules {
+    public static final Module FPS = new Module("fps", "FPS", true);
+    public static final Module COORDINATES = new Module("coordinates", "Coordinates", true);
+
+    public static final List<Module> LIST = List.of(FPS, COORDINATES);
+
+    private static final Gson GSON = new Gson();
+
+    private Modules() {}
+
+    private static Path file() {
+        return FabricLoader.getInstance().getConfigDir().resolve("dobri_visual.json");
+    }
+
+    public static void load() {
+        Path f = file();
+        if (!Files.exists(f)) return;
+        try (Reader r = Files.newBufferedReader(f)) {
+            Map<String, Boolean> map = GSON.fromJson(r, new TypeToken<Map<String, Boolean>>() {}.getType());
+            if (map == null) return;
+            for (Module m : LIST) {
+                Boolean v = map.get(m.id);
+                if (v != null) {
+                    m.enabled = v;
+                    m.anim = v ? 1f : 0f;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[Dobri Visual] Не удалось прочитать конфиг: " + e);
+        }
+    }
+
+    public static void save() {
+        Map<String, Boolean> map = new LinkedHashMap<>();
+        for (Module m : LIST) map.put(m.id, m.enabled);
+        try {
+            Path f = file();
+            Files.createDirectories(f.getParent());
+            try (Writer w = Files.newBufferedWriter(f)) {
+                GSON.toJson(map, w);
+            }
+        } catch (Exception e) {
+            System.err.println("[Dobri Visual] Не удалось сохранить конфиг: " + e);
+        }
+    }
+}
