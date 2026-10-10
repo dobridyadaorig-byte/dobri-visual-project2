@@ -1,0 +1,71 @@
+package dev.dobri.visual;
+
+import java.util.Locale;
+
+/** Настройка функции: ползунок или переключатель вариантов. */
+public final class Setting {
+    public enum Kind { SLIDER, CYCLE }
+
+    public final String id;
+    public final String name;
+    public final Kind kind;
+    public float min, max, step, value;
+    public String[] options = new String[0];
+    public int index;
+
+    private Setting(String id, String name, Kind kind) {
+        this.id = id;
+        this.name = name;
+        this.kind = kind;
+    }
+
+    public static Setting slider(String id, String name, float min, float max, float step, float def) {
+        Setting s = new Setting(id, name, Kind.SLIDER);
+        s.min = min;
+        s.max = max;
+        s.step = step;
+        s.value = def;
+        return s;
+    }
+
+    public static Setting cycle(String id, String name, String[] options, int def) {
+        Setting s = new Setting(id, name, Kind.CYCLE);
+        s.options = options;
+        s.index = def;
+        return s;
+    }
+
+    public double save() {
+        return kind == Kind.SLIDER ? value : index;
+    }
+
+    public void load(double v) {
+        if (kind == Kind.SLIDER) {
+            value = Math.max(min, Math.min(max, (float) v));
+        } else {
+            index = Math.max(0, Math.min(options.length - 1, (int) Math.round(v)));
+        }
+    }
+
+    public float progress() {
+        return (value - min) / (max - min);
+    }
+
+    public void setProgress(float p) {
+        p = Math.max(0f, Math.min(1f, p));
+        float raw = min + p * (max - min);
+        if (step > 0) raw = Math.round(raw / step) * step;
+        value = Math.max(min, Math.min(max, raw));
+    }
+
+    public void next() {
+        if (options.length > 0) index = (index + 1) % options.length;
+    }
+
+    public String display() {
+        if (kind == Kind.CYCLE) return options[index];
+        if (step >= 1f) return String.valueOf(Math.round(value));
+        if (step >= 0.1f) return String.format(Locale.ROOT, "%.1f", value);
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+}
