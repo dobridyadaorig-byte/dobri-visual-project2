@@ -1,0 +1,44 @@
+package dev.dobri.visual;
+
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
+
+import java.util.Locale;
+
+/** Рисует FPS и координаты в левом верхнем углу. */
+public final class Hud {
+    private Hud() {}
+
+    public static void render(DrawContext context, RenderTickCounter tickCounter) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        PlayerEntity player = mc.player;
+        if (player == null) return;
+
+        TextRenderer tr = mc.textRenderer;
+        int x = 6;
+        int y = 6;
+
+        if (Modules.FPS.enabled) {
+            drawLine(context, tr, "FPS: " + mc.getCurrentFps(), x, y);
+            y += 16;
+        }
+        if (Modules.COORDINATES.enabled) {
+            String s = String.format(Locale.ROOT, "X: %.1f  Y: %.1f  Z: %.1f",
+                    player.getX(), player.getY(), player.getZ());
+            drawLine(context, tr, s, x, y);
+            y += 16;
+        }
+    }
+
+    private static void drawLine(DrawContext c, TextRenderer tr, String text, int x, int y) {
+        Text t = Text.literal(text);
+        int w = tr.getWidth(t);
+        Ui.roundRect(c, x, y, w + 12, 14, 0xB0101014);
+        c.fill(x + 1, y + 2, x + 3, y + 12, Ui.PURPLE);
+        c.drawTextWithShadow(tr, t, x + 7, y + 3, Ui.TEXT);
+    }
+}
