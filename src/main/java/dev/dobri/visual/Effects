@@ -1,0 +1,85 @@
+package dev.dobri.visual;
+
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.particle.ParticleEffect;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.concurrent.ThreadLocalRandom;
+
+/** Частицы и косметика (нимб, орбы, шлейф). Видны только тебе. */
+public final class Effects {
+    private static final ParticleEffect[] TYPES = {
+            ParticleTypes.WITCH,
+            ParticleTypes.END_ROD,
+            ParticleTypes.FLAME,
+            ParticleTypes.SOUL_FIRE_FLAME,
+            ParticleTypes.HEART
+    };
+
+    private static int ticks;
+
+    private Effects() {}
+
+    private static ParticleEffect type(int idx) {
+        return TYPES[Math.max(0, Math.min(TYPES.length - 1, idx))];
+    }
+
+    private static void spawn(MinecraftClient mc, ParticleEffect e, double x, double y, double z, double vx, double vy, double vz) {
+        mc.particleManager.addParticle(e, x, y, z, vx, vy, vz);
+    }
+
+    public static void tick(MinecraftClient mc) {
+        ClientPlayerEntity p = mc.player;
+        if (p == null || mc.world == null) return;
+        ticks++;
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        double px = p.getX(), py = p.getY(), pz = p.getZ();
+        double h = p.getHeight();
+
+        // Частицы-аура вокруг игрока (не в первом лице, чтобы не мешали)
+        if (Modules.PARTICLES.enabled && !mc.options.getPerspective().isFirstPerson()) {
+            ParticleEffect e = type(Modules.P_TYPE.index);
+            int n = Math.round(Modules.P_AMOUNT.value);
+            for (int i = 0; i < n; i++) {
+                double a = rnd.nextDouble() * Math.PI * 2;
+                double r = 0.5 + rnd.nextDouble() * 0.4;
+                spawn(mc, e, px + Math.cos(a) * r, py + rnd.nextDouble() * h, pz + Math.sin(a) * r,
+                        0, 0.02 + rnd.nextDouble() * 0.03, 0);
+            }
+        }
+
+        // Нимб над головой
+        if (Modules.HALO.enabled) {
+            ParticleEffect e = type(Modules.HALO_STYLE.index);
+            for (int k = 0; k < 2; k++) {
+                double a = ticks * 0.18 + k * Math.PI;
+                spawn(mc, e, px + Math.cos(a) * 0.4, py + h + 0.3, pz + Math.sin(a) * 0.4, 0, 0, 0);
+            }
+        }
+
+        // Орбы вокруг тела
+        if (Modules.ORBS.enabled) {
+            ParticleEffect e = type(Modules.ORBS_STYLE.index);
+            for (int i = 0; i < 3; i++) {
+                double a = ticks * 0.12 + i * (Math.PI * 2 / 3);
+                double yy = py + h * 0.5 + Math.sin(ticks * 0.07 + i * 2.0) * 0.5;
+                spawn(mc, e, px + Math.cos(a) * 0.9, yy, pz + Math.sin(a) * 0.9, 0, 0, 0);
+            }
+        }
+
+        // Шлейф за ногами при движении
+        if (Modules.TRAIL.enabled) {
+            Vec3d v = p.getVelocity();
+            if (Math.hypot(v.x, v.z) > 0.05) {
+                ParticleEffect e = type(Modules.TRAIL_STYLE.index);
+                for (int i = 0; i < 2; i++) {
+                    spawn(mc, e, px + (rnd.nextDouble() - 0.5) * 0.4, py + 0.1 + rnd.nextDouble() * 0.2,
+                            pz + (rnd.nextDouble() - 0.5) * 0.4, 0, 0.01, 0);
+                }
+            }
+        }
+    }
+}
