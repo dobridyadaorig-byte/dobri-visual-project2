@@ -4,6 +4,10 @@ on:
   push:
   workflow_dispatch:
 
+concurrency:
+  group: build-dobri-visual-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
