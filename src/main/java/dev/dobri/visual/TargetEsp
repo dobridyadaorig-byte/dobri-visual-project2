@@ -1,0 +1,55 @@
+package dev.dobri.visual;
+
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+
+/** Цель под прицелом: подсветка контуром (Target ESP) и данные для Target HUD. */
+public final class TargetEsp {
+    public static LivingEntity target;
+    private static int timer;p
+
+    private static LivingEntity glowEntity;
+    private static boolean weSetGlow;
+
+    private TargetEsp() {}
+
+    public static void tick(MinecraftClient mc) {
+        boolean wantAny = Modules.TARGET_ESP.enabled || Modules.TARGET_HUD.enabled;
+        Entity hit = mc.targetedEntity;
+
+        if (wantAny && hit instanceof LivingEntity le && le != mc.player && !le.isRemoved()) {
+            target = le;
+            timer = Math.max(1, (int) (Modules.HOLD.value * 20f));
+        } else if (timer > 0) {
+            timer--;
+        }
+
+        if (target != null && (timer <= 0 || target.isRemoved() || !wantAny)) {
+            target = null;
+            timer = 0;
+        }
+
+        boolean glow = Modules.TARGET_ESP.enabled && target != null;
+        LivingEntity wanted = glow ? target : null;
+
+        if (glowEntity != null && glowEntity != wanted) {
+            if (weSetGlow) glowEntity.setGlowing(false);
+            glowEntity = null;
+            weSetGlow = false;
+        }
+        if (wanted != null && glowEntity == null) {
+            weSetGlow = !wanted.isGlowing();
+            wanted.setGlowing(true);
+            glowEntity = wanted;
+        }
+    }
+
+    public static void reset() {
+        if (glowEntity != null && weSetGlow) glowEntity.setGlowing(false);
+        glowEntity = null;
+        weSetGlow = false;
+        target = null;
+        timer = 0;
+    }
+}
