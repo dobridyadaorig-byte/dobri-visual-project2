@@ -1,0 +1,47 @@
+package dev.dobri.visual;
+
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.Perspective;
+
+/** Freelook: камера вращается отдельно от игрока, пока зажата клавиша. */
+public final class Freelook {
+    public static boolean active;
+    public static float yaw;
+    public static float pitch;
+
+    private static boolean changedPerspective;
+    private static Perspective previous;
+
+    private Freelook() {}
+
+    public static void update(MinecraftClient mc, boolean want) {
+        ClientPlayerEntity p = mc.player;
+        if (want && !active && p != null) {
+            active = true;
+            yaw = p.getYaw();
+            pitch = p.getPitch();
+            changedPerspective = false;
+            if (Modules.FL_THIRD.index == 0) {
+                previous = mc.options.getPerspective();
+                if (previous.isFirstPerson()) {
+                    mc.options.setPerspective(Perspective.THIRD_PERSON_BACK);
+                    changedPerspective = true;
+                }
+            }
+        } else if (!want && active) {
+            active = false;
+            if (changedPerspective && previous != null) {
+                mc.options.setPerspective(previous);
+            }
+            changedPerspective = false;
+        }
+    }
+
+    /** Вызывается из миксина вместо поворота игрока. */
+    public static void rotate(double dx, double dy) {
+        float k = 0.15f * Modules.FL_SPEED.value;
+        yaw += (float) dx * k;
+        pitch = Math.max(-90f, Math.min(90f, pitch + (float) dy * k));
+    }
+}
