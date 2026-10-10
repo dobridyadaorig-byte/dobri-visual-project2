@@ -1,0 +1,17 @@
+package dev.dobri.visual;
+
+/** Одна визуальная функция с переключателем ON/OFF. */
+public final class Module {
+    public final String id;
+    public final String name;
+    public boolean enabled;
+    /** Плавная анимация переключателя (0 = выкл, 1 = вкл), используется только меню. */
+    public float anim;
+
+    public Module(String id, String name, boolean enabledByDefault) {
+        this.id = id;
+        this.name = name;
+        this.enabled = enabledByDefault;
+        this.anim = enabledByDefault ? 1f : 0f;
+    }
+}
